@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Радар стійкості команди – прототип</title>
+<style>
+:root{
+  --bg:#F4F6F9; --card:#FFFFFF; --text:#1D2433; --muted:#5F6B7A; --line:#DDE2E8;
+  --brand:#2F5D8A; --brand-soft:#E6EEF7;
+  --ok:#2E8B57; --ok-bg:#CFEBDA; --risk:#B07A00; --risk-bg:#FBE7AE; --down:#B03A2E; --down-bg:#F5C9C3;
+  --off-bg:#EDEFF2; --warn-bg:#FFF4E5; --warn-line:#F0B54A;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Segoe UI",Roboto,Arial,sans-serif;font-size:15px;color:var(--text);background:var(--bg)}
+header{background:var(--brand);color:#fff;padding:12px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.logo{font-weight:700;font-size:19px;display:flex;align-items:center;gap:10px}
+.logo svg{flex:none}
+.team{opacity:.85;font-size:14px}
+.spacer{flex:1}
+header label{font-size:13px;opacity:.9}
+header select{font:inherit;font-size:14px;padding:5px 8px;border-radius:6px;border:0}
+.demo{background:#FFF8D6;border-bottom:1px solid #EBDDA0;color:#5C4A00;padding:7px 24px;font-size:13px}
+nav{background:var(--card);border-bottom:1px solid var(--line);padding:0 16px;display:flex;gap:2px;flex-wrap:wrap}
+nav button{font:inherit;background:none;border:0;border-bottom:3px solid transparent;padding:12px 14px;color:var(--muted);cursor:pointer}
+nav button.active{color:var(--brand);border-bottom-color:var(--brand);font-weight:600}
+main{padding:20px 24px;max-width:1320px}
+h1{font-size:21px;margin:0 0 4px}
+.sub{color:var(--muted);margin:0 0 16px;font-size:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.card h2{font-size:16px;margin:0 0 12px}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:5px;min-width:160px}
+.field label{font-size:13px;color:var(--muted)}
+input,select{font:inherit;padding:7px 9px;border:1px solid #C5CCD5;border-radius:6px;background:#fff}
+input.err,select.err{border-color:var(--down);background:#FDF0EE}
+.btn{font:inherit;padding:8px 14px;border-radius:6px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer}
+.btn.sec{background:#fff;color:var(--brand)}
+.btn.small{padding:4px 10px;font-size:13px}
+.alert{border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;gap:10px;align-items:flex-start}
+.alert.warn{background:var(--warn-bg);border:1px solid var(--warn-line)}
+.alert.info{background:var(--brand-soft);border:1px solid #B9CDE3}
+.alert.bad{background:#FDECEA;border:1px solid #E8A39B}
+.alert b{font-weight:600}
+.alert .ico{font-weight:700;width:20px;text-align:center}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted);margin:10px 0 0}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-flex;width:18px;height:18px;border-radius:3px;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+/* grid */
+.gridwrap{overflow-x:auto}
+table.grid{border-collapse:separate;border-spacing:2px;font-size:12px}
+.grid th{font-weight:600;color:var(--muted);font-size:11px;padding:0}
+.grid th.day{font-size:12px;color:var(--text);text-align:left;padding:2px 4px;border-left:2px solid #9AA6B5}
+.grid td.name{white-space:nowrap;padding:2px 10px 2px 0;font-size:13px;min-width:210px}
+.grid td.name small{display:block;color:var(--muted);font-size:11.5px}
+.c{width:20px;height:30px;border-radius:3px;text-align:center;font-weight:700;font-size:12px;cursor:pointer;position:relative}
+.c.ok{background:var(--ok-bg)}
+.c.risk{background:var(--risk-bg);color:var(--risk)}
+.c.down{background:var(--down-bg);color:var(--down)}
+.c.off{background:repeating-linear-gradient(135deg,var(--off-bg) 0 4px,#F8F9FA 4px 8px);cursor:default}
+.c.unc::after{content:"?";position:absolute;right:1px;top:-2px;font-size:9px;color:#555}
+.c.now{outline:2px solid var(--brand);outline-offset:0}
+.c.daystart{box-shadow:-3px 0 0 0 #9AA6B5}
+.pct{font-size:11px;text-align:center;font-weight:600;color:var(--muted);height:22px}
+.pct.low{background:var(--down);color:#fff;border-radius:3px}
+.hr{text-align:center}
+.detail{margin-top:12px;font-size:14px;min-height:22px;color:var(--text)}
+/* tables */
+table.t{border-collapse:collapse;width:100%;font-size:14px}
+.t th,.t td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+.t th{font-size:13px;color:var(--muted);font-weight:600;background:#FAFBFC}
+.t td.num,.t th.num{text-align:right}
+.tag{display:inline-block;padding:2px 8px;border-radius:12px;font-size:12.5px;font-weight:600}
+.tag.ok{background:var(--ok-bg);color:#1E6B40}.tag.risk{background:var(--risk-bg);color:#7A5500}.tag.down{background:var(--down-bg);color:#8A2A20}.tag.off{background:var(--off-bg);color:var(--muted)}
+.tag.neutral{background:var(--brand-soft);color:var(--brand)}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid #C5CCD5;border-radius:14px;padding:4px 10px;font-size:13px;cursor:pointer;background:#fff;user-select:none}
+.chip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+.slot{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--line)}
+.slot:last-child{border-bottom:0}
+.slot .time{font-weight:600;min-width:170px}
+.bar{height:10px;background:var(--off-bg);border-radius:5px;flex:1;max-width:260px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.muted{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media (max-width:900px){.grid2{grid-template-columns:1fr}}
+#toast{position:fixed;right:20px;bottom:20px;background:#1D2433;color:#fff;padding:12px 16px;border-radius:8px;font-size:14px;opacity:0;transition:opacity .2s;max-width:420px}
+#toast.show{opacity:.95}
+.status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.req{color:var(--down)}
+.err-text{color:var(--down);font-size:13px;margin-top:8px}
+.switch{display:inline-flex;align-items:center;gap:8px;cursor:pointer}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg width="28" height="28" viewBox="0 0 28 28" aria-hidden="true"><circle cx="14" cy="14" r="12" fill="none" stroke="#fff" stroke-width="2"/><circle cx="14" cy="14" r="7" fill="none" stroke="#fff" stroke-width="1.5" opacity=".7"/><path d="M14 14 L23 7" stroke="#9FE0B5" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="14" r="2" fill="#fff"/></svg>
+    Радар стійкості команди
+  </div>
+  <span class="team">Команда «Фенікс»</span>
+  <span class="spacer"></span>
+  <label for="role">Увійти як:</label>
+  <select id="role">
+    <option value="manager">Олена Коваль (менеджерка)</option>
+    <option value="member">Софія Литвин (учасниця)</option>
+    <option value="admin">Адміністратор сервісу</option>
+  </select>
+</header>
+<div class="demo">Демо-версія. Люди і дані вигадані. Час зафіксовано: понеділок, 16.11.2026, 09:00.</div>
+<nav id="tabs"></nav>
+<main id="view"></main>
+<div id="toast" role="status"></div>
+
+<script>
+// ---------------- дані ----------------
+const H = 48, START = 9; // 48 годин від пн 09:00
+const DAYS = [{s:'Пн', d:'16.11'}, {s:'Вт', d:'17.11'}, {s:'Ср', d:'18.11'}];
+const PROVIDERS = { loe:'Львівобленерго', yasno:'YASNO (Київ)' };
+const COMMUNITIES = [
+  {id:'lviv', name:'Львів', prov:'loe'}, {id:'vynnyky', name:'Винники', prov:'loe'},
+  {id:'pustomyty', name:'Пустомити', prov:'loe'}, {id:'kyiv', name:'Київ', prov:'yasno'}];
+const GROUPS = ['1.1','1.2','2.1','2.2','3.1','3.2','4.1','4.2','5.1','5.2','6.1','6.2'];
+const POWER = { none:'Немає', powerbank:'Павербанк', station:'Зарядна станція', generator:'Генератор' };
+const SKILLS = ['Управління проєктами','Python','PostgreSQL','React','TypeScript','Docker','Тестування','Дизайн','Figma'];
+
+let members = [
+  {id:1, name:'Олена Коваль', role:'Менеджерка', comm:'lviv', group:'1.2', power:'station', from:9, to:18, skills:['Управління проєктами'], checked:'15.11.2026'},
+  {id:2, name:'Андрій Мельник', role:'Бекенд', comm:'lviv', group:'2.1', power:'none', from:9, to:18, skills:['Python','PostgreSQL'], checked:'14.11.2026'},
+  {id:3, name:'Софія Литвин', role:'Фронтенд', comm:'vynnyky', group:'3.2', power:'powerbank', from:10, to:19, skills:['React','TypeScript'], checked:'02.11.2026'},
+  {id:4, name:'Тарас Бойко', role:'Бекенд', comm:'kyiv', group:'1.1', power:'none', from:9, to:18, skills:['Python','Docker'], checked:'10.11.2026'},
+  {id:5, name:'Ірина Ткаченко', role:'Тестувальниця', comm:'pustomyty', group:'4.1', power:'none', from:8, to:17, skills:['Тестування','Python'], checked:'15.11.2026'},
+  {id:6, name:'Максим Гнатюк', role:'Дизайнер', comm:'kyiv', group:'5.2', power:'generator', from:10, to:19, skills:['Дизайн','Figma'], checked:'12.11.2026'},
+  {id:7, name:'Наталія Савчук', role:'Фронтенд', comm:'lviv', group:'4.1', power:'none', from:9, to:18, skills:['React','Тестування'], checked:'15.11.2026'},
+];
+// години відраховуються від пн 00:00
+let outages = [
+  {prov:'loe', group:'1.2', a:14, b:18, type:'off', src:'site'}, {prov:'loe', group:'1.2', a:34, b:38, type:'off', src:'site'},
+  {prov:'loe', group:'2.1', a:18, b:22, type:'off', src:'site'}, {prov:'loe', group:'2.1', a:38, b:42, type:'off', src:'site'},
+  {prov:'loe', group:'3.2', a:9,  b:12, type:'off', src:'site'}, {prov:'loe', group:'3.2', a:38, b:42, type:'off', src:'site'},
+  {prov:'loe', group:'4.1', a:12, b:16, type:'off', src:'site'}, {prov:'loe', group:'4.1', a:39, b:43, type:'possible', src:'site'},
+  {prov:'yasno', group:'1.1', a:16, b:20, type:'off', src:'site'}, {prov:'yasno', group:'1.1', a:37, b:41, type:'off', src:'site'},
+  {prov:'yasno', group:'5.2', a:8,  b:11, type:'possible', src:'site'}, {prov:'yasno', group:'5.2', a:44, b:48, type:'off', src:'site'},
+];
+// інші черги – простий шаблон, щоб профіль можна було змінити на будь-яку чергу
+GROUPS.forEach((g, k) => ['loe','yasno'].forEach(p => {
+  if (!outages.some(o => o.prov === p && o.group === g)) {
+    const a = 8 + (k * 3) % 12; outages.push({prov:p, group:g, a, b:a+4, type:'off', src:'site'}, {prov:p, group:g, a:a+24, b:a+28, type:'off', src:'site'});
+  }}));
+let alerts = [ {comm:'kyiv', a:8 + 40/60, b:null} ]; // тривога в Києві триває з 08:40
+let settings = { threshold:50, channels:{ slack:{on:true, addr:'#team-phoenix'}, telegram:{on:true, addr:'@olena_koval'}, email:{on:false, addr:'olena@phoenix.dev'} } };
+let invites = [
+  {email:'dmytro@phoenix.dev', code:'K7Q2-MN', until:'20.11.2026', status:'Очікує'},
+  {email:'yulia@phoenix.dev', code:'P4X9-LT', until:'12.11.2026', status:'Прострочене'},
+];
+let sources = { alerts:true, loe:true, yasno:true };
+let sentLog = [];
+let loeGroupsChangedAt = '14.11.2026';
+const REPORT = [ // жовтень 2026, робочі години
+  {name:'Олена Коваль', al:6.5, out:4.0, both:1.0}, {name:'Андрій Мельник', al:7.0, out:22.5, both:2.0},
+  {name:'Софія Литвин', al:6.0, out:9.0, both:1.5}, {name:'Тарас Бойко', al:11.5, out:26.0, both:3.5},
+  {name:'Ірина Ткаченко', al:6.5, out:24.0, both:2.0}, {name:'Максим Гнатюк', al:12.0, out:3.0, both:0.5},
+  {name:'Наталія Савчук', al:7.0, out:21.5, both:2.5}];
+
+// ---------------- розрахунок прогнозу ----------------
+const comm = id => COMMUNITIES.find(c => c.id === id);
+const t = i => START + i;                    // абсолютна година
+const hod = i => t(i) % 24;                  // година доби
+const dayOf = i => Math.floor(t(i) / 24);
+const two = n => String(n).padStart(2, '0');
+const hourName = i => `${DAYS[dayOf(i)].s} ${DAYS[dayOf(i)].d}, ${two(hod(i))}:00`;
+const rangeName = (i, j) => `${DAYS[dayOf(i)].s} ${DAYS[dayOf(i)].d}, ${two(hod(i))}:00–${two(hod(j) + 1)}:00`;
+
+function state(m, i) {
+  const h = hod(i), abs = t(i), c = comm(m.comm);
+  if (h < m.from || h >= m.to) return {s:'off', why:'Поза робочими годинами'};
+  const uncertain = !sources[c.prov];
+  const al = alerts.find(x => x.comm === m.comm && x.a < abs + 1 && (x.b === null ? i === 0 : x.b > abs));
+  if (al) return {s:'down', why:`Повітряна тривога (${c.name})`, unc:false};
+  const o = outages.find(x => x.prov === c.prov && x.group === m.group && x.a < abs + 1 && x.b > abs);
+  if (o) {
+    const src = o.src === 'manual' ? ', графік внесено вручну' : '';
+    if (o.type === 'possible') return {s:'risk', why:`Можливе відключення (черга ${m.group})${src}`, unc:uncertain};
+    if (m.power !== 'none') return {s:'risk', why:`Відключення світла (черга ${m.group}), працює від резервного живлення: ${POWER[m.power].toLowerCase()}${src}`, unc:uncertain};
+    return {s:'down', why:`Відключення світла (черга ${m.group})${src}`, unc:uncertain};
+  }
+  return {s:'ok', why:'Доступний', unc:uncertain};
+}
+function pct(i, list = members) {
+  const work = list.filter(m => state(m, i).s !== 'off');
+  if (!work.length) return null;
+  return Math.round(work.filter(m => state(m, i).s === 'ok').length / work.length * 100);
+}
+function lowRanges() {
+  const res = []; let cur = null;
+  for (let i = 0; i < H; i++) {
+    const p = pct(i);
+    if (p !== null && p < settings.threshold) { if (cur && cur.j === i - 1) { cur.j = i; cur.min = Math.min(cur.min, p); } else { cur = {i, j:i, min:p}; res.push(cur); } }
+  }
+  return res;
+}
+function channelsOn() { return Object.entries(settings.channels).filter(([k, v]) => v.on).map(([k]) => ({slack:'Slack', telegram:'Telegram', email:'пошту'})[k]); }
+
+// ---------------- інтерфейс ----------------
+const TABS = {
+  manager: [['graph','Графік команди'],['meeting','Час для зустрічі'],['task','Кому передати задачу'],['report','Звіт про втрачений час'],['team','Команда'],['settings','Налаштування'],['profile','Мій профіль']],
+  member: [['graph','Графік команди'],['profile','Мій профіль']],
+  admin: [['sources','Джерела даних']],
+};
+let role = 'manager', tab = 'graph', me = () => members.find(m => m.id === (role === 'member' ? 3 : 1));
+const $ = s => document.querySelector(s);
+function toast(msg) { const el = $('#toast'); el.textContent = msg; el.classList.add('show'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('show'), 3200); }
+function renderTabs() { $('#tabs').innerHTML = TABS[role].map(([k, n]) => `<button data-tab="${k}" class="${k === tab ? 'active' : ''}">${n}</button>`).join(''); }
+function render() { renderTabs(); $('#view').innerHTML = VIEWS[tab](); if (AFTER[tab]) AFTER[tab](); }
+const icon = s => ({ok:'', risk:'!', down:'×', off:''})[s];
+const stateName = s => ({ok:'Доступний', risk:'Ризик', down:'Недоступний', off:'Поза роботою'})[s];
+
+const VIEWS = {
+  graph() {
+    const low = lowRanges();
+    const failing = Object.entries(sources).filter(([k, v]) => !v && k !== 'alerts').map(([k]) => PROVIDERS[k]);
+    let html = `<h1>Графік доступності команди</h1><p class="sub">Прогноз на 48 годин: з понеділка 09:00 до середи 09:00. Натисніть на клітинку, щоб побачити причину.</p>`;
+    const kyivAlert = alerts.find(a => a.b === null);
+    if (kyivAlert) html += `<div class="alert bad"><span class="ico">!</span><div><b>Тривога в громаді Київ</b> триває з 08:40. Тарас Бойко зараз недоступний.</div></div>`;
+    failing.forEach(p => html += `<div class="alert bad"><span class="ico">?</span><div><b>Дані можуть бути неточні.</b> Сайт ${p} не відповідає, показано останній відомий графік.</div></div>`);
+    if (role === 'manager') {
+      if (low.length) low.forEach(r => html += `<div class="alert warn"><span class="ico">!</span><div><b>${rangeName(r.i, r.j)}</b>: доступно лише ${r.min} % команди (поріг ${settings.threshold} %). Попередження надіслано в ${channelsOn().join(', ') || '– канали вимкнено'}.</div></div>`);
+      else html += `<div class="alert info"><span class="ico">✓</span><div>Найближчі 48 годин доступно не менше ${settings.threshold} % команди.</div></div>`;
+    }
+    if (role === 'member' && !me().confirmed)
+      html += `<div class="alert info"><span class="ico">i</span><div><b>Львівобленерго оновило поділ на черги ${loeGroupsChangedAt}.</b> Перевірте, чи ваша черга досі ${me().group}. <button class="btn small" data-act="confirm-group">Так, черга правильна</button> <button class="btn small sec" data-tab="profile">Змінити чергу</button></div></div>`;
+    html += `<div class="card"><div class="gridwrap"><table class="grid"><thead><tr><th></th>`;
+    let spans = []; for (let i = 0; i < H; i++) { const d = dayOf(i); if (!spans.length || spans[spans.length - 1].d !== d) spans.push({d, n:0}); spans[spans.length - 1].n++; }
+    spans.forEach(sp => html += `<th class="day" colspan="${sp.n}">${DAYS[sp.d].s}, ${DAYS[sp.d].d}</th>`);
+    html += `</tr><tr><th></th>`;
+    for (let i = 0; i < H; i++) html += `<th class="hr">${hod(i) % 3 === 0 ? two(hod(i)) : ''}</th>`;
+    html += `</tr></thead><tbody>`;
+    members.forEach(m => {
+      const c = comm(m.comm);
+      html += `<tr><td class="name">${m.name}<small>${c.name} · черга ${m.group} · ${m.power === 'none' ? 'без резерву' : POWER[m.power].toLowerCase()}</small></td>`;
+      for (let i = 0; i < H; i++) { const st = state(m, i); html += `<td class="c ${st.s}${st.unc ? ' unc' : ''}${i === 0 ? ' now' : ''}${hod(i) === 0 ? ' daystart' : ''}" data-m="${m.id}" data-i="${i}" title="${hourName(i)}: ${stateName(st.s)}">${icon(st.s)}</td>`; }
+      html += `</tr>`;
+    });
+    html += `<tr><td class="name"><b>Доступно, %</b><small>поріг ${settings.threshold} %</small></td>`;
+    for (let i = 0; i < H; i++) { const p = pct(i); html += `<td class="pct${p !== null && p < settings.threshold ? ' low' : ''}">${p === null ? '' : p}</td>`; }
+    html += `</tr></tbody></table></div>
+      <div class="legend"><span><i class="sw" style="background:var(--ok-bg)"></i>Доступний</span><span><i class="sw" style="background:var(--risk-bg);color:var(--risk)">!</i>Ризик</span><span><i class="sw" style="background:var(--down-bg);color:var(--down)">×</i>Недоступний</span><span><i class="sw" style="background:repeating-linear-gradient(135deg,#EDEFF2 0 4px,#F8F9FA 4px 8px)"></i>Поза робочими годинами</span><span><i class="sw" style="outline:2px solid var(--brand)"></i>Зараз</span></div>
+      <div class="detail" id="detail">Натисніть на клітинку графіка.</div></div>`;
+    return html;
+  },
+  meeting() {
+    return `<h1>Час для зустрічі</h1><p class="sub">Сервіс шукає години, коли доступна більшість учасників зустрічі.</p>
+    <div class="card"><div class="row">
+      <div class="field"><label>День</label><select id="m-day"><option value="0">Понеділок, 16.11</option><option value="1" selected>Вівторок, 17.11</option></select></div>
+      <div class="field"><label>Тривалість</label><select id="m-dur"><option value="1" selected>1 година</option><option value="2">2 години</option></select></div>
+      <div class="field"><label>Учасники</label><div class="chips" id="m-who">${members.map(m => `<span class="chip on" data-id="${m.id}">${m.name.split(' ')[0]}</span>`).join('')}</div></div>
+      <button class="btn" id="m-go">Підібрати час</button></div></div>
+    <div class="card"><h2>Найкращі варіанти</h2><div id="m-res" class="muted">Натисніть «Підібрати час».</div></div>`;
+  },
+  task() {
+    let opts = ''; for (let i = 0; i < H; i++) if (hod(i) >= 8 && hod(i) < 19) opts += `<option value="${i}" ${i === 30 ? 'selected' : ''}>${hourName(i)}</option>`;
+    return `<h1>Кому передати задачу</h1><p class="sub">Сервіс показує людей з потрібною навичкою і їхній стан у вибрану годину.</p>
+    <div class="card"><div class="row">
+      <div class="field"><label>Навичка</label><select id="t-skill">${SKILLS.map(s => `<option ${s === 'Python' ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label>Коли потрібна людина</label><select id="t-hour">${opts}</select></div>
+      <button class="btn" id="t-go">Знайти</button></div></div>
+    <div class="card"><h2>Результат</h2><div id="t-res" class="muted">Натисніть «Знайти».</div></div>`;
+  },
+  report() {
+    let rows = '', sa = 0, so = 0, st = 0;
+    REPORT.forEach(r => { const tot = r.al + r.out - r.both; sa += r.al; so += r.out; st += tot;
+      rows += `<tr><td>${r.name}</td><td class="num">${f1(r.al)}</td><td class="num">${f1(r.out)}</td><td class="num">${f1(r.both)}</td><td class="num"><b>${f1(tot)}</b></td></tr>`; });
+    const share = st / (7 * 22 * 8) * 100;
+    return `<h1>Звіт про втрачений час</h1><p class="sub">Жовтень 2026 · команда «Фенікс» · лише робочі години. Дані звіту демонстраційні.</p>
+    <div class="row" style="margin-bottom:16px">
+      <div class="card" style="margin:0;min-width:220px"><div class="muted">Втрачено разом</div><div style="font-size:26px;font-weight:700">${f1(st)} год</div></div>
+      <div class="card" style="margin:0;min-width:220px"><div class="muted">Частка робочого часу</div><div style="font-size:26px;font-weight:700">${f1(share)} %</div></div>
+      <div class="card" style="margin:0;min-width:220px"><div class="muted">Головна причина</div><div style="font-size:26px;font-weight:700">Відключення</div></div></div>
+    <div class="card"><table class="t"><thead><tr><th>Учасник</th><th class="num">Тривоги, год</th><th class="num">Відключення, год</th><th class="num">Одночасно, год</th><th class="num">Разом, год</th></tr></thead>
+    <tbody>${rows}<tr><td><b>Команда</b></td><td class="num"><b>${f1(sa)}</b></td><td class="num"><b>${f1(so)}</b></td><td class="num"><b>${f1(REPORT.reduce((a, r) => a + r.both, 0))}</b></td><td class="num"><b>${f1(st)}</b></td></tr></tbody></table>
+    <p class="muted" style="font-size:13px">«Разом» не рахує двічі години, коли тривога і відключення були одночасно.</p>
+    <button class="btn" id="r-csv">Завантажити для замовника (CSV)</button></div>`;
+  },
+  team() {
+    return `<h1>Команда «Фенікс»</h1><p class="sub">${members.length} учасників. Профіль бачать лише люди з цієї команди.</p>
+    <div class="card"><h2>Запросити учасника</h2><div class="row"><div class="field" style="min-width:300px"><label>Пошта</label><input id="i-email" placeholder="name@company.com"></div><button class="btn" id="i-go">Надіслати запрошення</button></div><div id="i-err" class="err-text"></div></div>
+    <div class="card"><h2>Запрошення</h2><table class="t"><thead><tr><th>Пошта</th><th>Код</th><th>Дійсне до</th><th>Статус</th><th></th></tr></thead><tbody>
+    ${invites.map((v, k) => `<tr><td>${v.email}</td><td>${v.code}</td><td>${v.until}</td><td><span class="tag ${v.status === 'Очікує' ? 'neutral' : 'down'}">${v.status}</span></td><td>${v.status === 'Прострочене' ? `<button class="btn small sec" data-act="resend" data-k="${k}">Надіслати знову</button>` : ''}</td></tr>`).join('')}</tbody></table></div>
+    <div class="card"><h2>Учасники</h2><table class="t"><thead><tr><th>Ім'я</th><th>Роль</th><th>Громада</th><th>Черга</th><th>Резервне живлення</th><th>Робочі години</th><th>Черга підтверджена</th></tr></thead><tbody>
+    ${members.map(m => `<tr><td>${m.name}</td><td>${m.role}</td><td>${comm(m.comm).name}</td><td>${m.group}</td><td>${POWER[m.power]}</td><td>${two(m.from)}:00–${two(m.to)}:00</td><td>${m.checked}</td></tr>`).join('')}</tbody></table></div>`;
+  },
+  settings() {
+    const ch = settings.channels;
+    const line = (k, n) => `<tr><td><label class="switch"><input type="checkbox" data-ch="${k}" ${ch[k].on ? 'checked' : ''}> ${n}</label></td><td><input data-addr="${k}" value="${ch[k].addr}" style="width:260px"></td><td><button class="btn small sec" data-test="${k}">Надіслати пробне</button></td></tr>`;
+    return `<h1>Налаштування</h1><p class="sub">Поріг попередження і канали для сповіщень.</p>
+    <div class="grid2"><div class="card"><h2>Поріг попередження</h2>
+      <p class="muted" style="margin-top:0">Попередження приходить, якщо доступно менше ніж <b id="s-val">${settings.threshold}</b> % команди.</p>
+      <input type="range" id="s-thr" min="20" max="90" step="5" value="${settings.threshold}" style="width:100%">
+      <div class="row" style="margin-top:12px"><button class="btn" id="s-save">Зберегти поріг</button><span id="s-err" class="err-text"></span></div></div>
+    <div class="card"><h2>Канали сповіщень</h2><table class="t"><tbody>${line('slack','Slack')}${line('telegram','Telegram')}${line('email','Пошта')}</tbody></table></div></div>`;
+  },
+  profile() {
+    const m = me(), c = comm(m.comm);
+    return `<h1>Мій профіль</h1><p class="sub">${m.name}. Адресу сервіс не збирає: достатньо громади і черги.</p>
+    <div class="card"><div class="grid2">
+      <div class="field"><label>Громада <span class="req">*</span></label><select id="p-comm"><option value="">– оберіть –</option>${COMMUNITIES.map(x => `<option value="${x.id}" ${x.id === m.comm ? 'selected' : ''}>${x.name} (${PROVIDERS[x.prov]})</option>`).join('')}</select></div>
+      <div class="field"><label>Черга відключень <span class="req">*</span></label><select id="p-group"><option value="">– оберіть –</option>${GROUPS.map(g => `<option ${g === m.group ? 'selected' : ''}>${g}</option>`).join('')}</select></div>
+      <div class="field"><label>Резервне живлення <span class="req">*</span></label><select id="p-power">${Object.entries(POWER).map(([k, v]) => `<option value="${k}" ${k === m.power ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+      <div class="row"><div class="field" style="min-width:120px"><label>Робота з <span class="req">*</span></label><input id="p-from" type="number" min="0" max="23" value="${m.from}"></div><div class="field" style="min-width:120px"><label>до <span class="req">*</span></label><input id="p-to" type="number" min="1" max="24" value="${m.to}"></div></div>
+    </div>
+    <div class="field" style="margin-top:14px"><label>Навички</label><div class="chips" id="p-skills">${SKILLS.map(s => `<span class="chip ${m.skills.includes(s) ? 'on' : ''}">${s}</span>`).join('')}</div></div>
+    <p class="muted" style="font-size:13px">Чергу підтверджено: ${m.checked}. Свою чергу можна знайти на сайті ${PROVIDERS[c.prov]}.</p>
+    <button class="btn" id="p-save">Зберегти профіль</button><div id="p-err" class="err-text"></div></div>`;
+  },
+  sources() {
+    const row = (k, n, freq) => `<tr><td>${n}</td><td>${freq}</td><td><span class="status-dot" style="background:${sources[k] ? 'var(--ok)' : 'var(--down)'}"></span>${sources[k] ? 'Працює' : 'Не відповідає'}</td><td>${sources[k] ? (k === 'alerts' ? '09:00' : '08:55') : '06:55'}</td><td>${k !== 'alerts' ? `<label class="switch"><input type="checkbox" data-fail="${k}" ${sources[k] ? '' : 'checked'}> імітувати збій</label>` : ''}</td></tr>`;
+    let o = ''; for (let d = 0; d < 2; d++) o += `<option value="${d}">${DAYS[d].s}, ${DAYS[d].d}</option>`;
+    const manual = outages.filter(x => x.src === 'manual');
+    return `<h1>Джерела даних</h1><p class="sub">Стан джерел і ручне внесення графіка, якщо сайт обленерго не читається.</p>
+    <div class="card"><table class="t"><thead><tr><th>Джерело</th><th>Як часто</th><th>Стан</th><th>Останнє читання</th><th>Демо</th></tr></thead><tbody>
+      ${row('alerts','API тривог','щохвилини')}${row('loe','Сайт Львівобленерго','щогодини')}${row('yasno','Сайт YASNO','щогодини')}</tbody></table></div>
+    <div class="card"><h2>Внести графік вручну</h2><div class="row">
+      <div class="field"><label>Обленерго</label><select id="a-prov">${Object.entries(PROVIDERS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('')}</select></div>
+      <div class="field"><label>Черга</label><select id="a-group">${GROUPS.map(g => `<option>${g}</option>`).join('')}</select></div>
+      <div class="field"><label>День</label><select id="a-day">${o}</select></div>
+      <div class="field" style="min-width:90px"><label>З, год</label><input id="a-from" type="number" min="0" max="23" value="18"></div>
+      <div class="field" style="min-width:90px"><label>До, год</label><input id="a-to" type="number" min="1" max="24" value="20"></div>
+      <button class="btn" id="a-go">Додати відключення</button></div><div id="a-err" class="err-text"></div>
+      ${manual.length ? `<table class="t" style="margin-top:12px"><thead><tr><th>Внесено вручну</th></tr></thead><tbody>${manual.map(x => `<tr><td>${PROVIDERS[x.prov]}, черга ${x.group}: ${DAYS[Math.floor(x.a / 24)].s} ${DAYS[Math.floor(x.a / 24)].d}, ${two(x.a % 24)}:00–${two(x.b % 24 || 24)}:00</td></tr>`).join('')}</tbody></table>` : ''}</div>`;
+  },
+};
+const f1 = x => x.toFixed(1).replace('.', ',');
+
+const AFTER = {
+  graph() {
+    $('#view').querySelectorAll('td.c').forEach(td => td.addEventListener('click', () => {
+      const m = members.find(x => x.id === +td.dataset.m), i = +td.dataset.i, st = state(m, i);
+      $('#detail').innerHTML = `<b>${m.name}</b> · ${hourName(i)}–${two(hod(i) + 1)}:00 · <span class="tag ${st.s}">${stateName(st.s)}</span> ${st.s === 'ok' ? '' : '· ' + st.why}${st.unc ? ' · <i>дані можуть бути неточні</i>' : ''}`;
+    }));
+  },
+  meeting() {
+    $('#m-who').addEventListener('click', e => { if (e.target.classList.contains('chip')) e.target.classList.toggle('on'); });
+    $('#m-go').addEventListener('click', () => {
+      const day = +$('#m-day').value, dur = +$('#m-dur').value;
+      const who = [...document.querySelectorAll('#m-who .chip.on')].map(c => members.find(m => m.id === +c.dataset.id));
+      if (!who.length) { $('#m-res').innerHTML = '<span class="err-text">Оберіть хоча б одного учасника.</span>'; return; }
+      const slots = [];
+      for (let i = 0; i + dur <= H; i++) {
+        if (dayOf(i) !== day || hod(i) < 8 || hod(i) + dur > 19) continue;
+        if (day === 0 && i === 0) continue;
+        let okAll = who.filter(m => { for (let k = 0; k < dur; k++) if (state(m, i + k).s !== 'ok') return false; return true; });
+        slots.push({i, ok:okAll, miss:who.filter(m => !okAll.includes(m))});
+      }
+      slots.sort((a, b) => b.ok.length - a.ok.length || a.i - b.i);
+      $('#m-res').innerHTML = slots.slice(0, 4).map((s, k) => `<div class="slot"><span class="time">${k === 0 ? '★ ' : ''}${DAYS[day].s}, ${two(hod(s.i))}:00–${two(hod(s.i) + dur)}:00</span><span class="bar"><i style="width:${s.ok.length / who.length * 100}%"></i></span><span><b>${s.ok.length} з ${who.length}</b> доступні</span><span class="muted">${s.miss.length ? (s.miss.length === 1 ? 'Не зможе: ' : 'Не зможуть: ') + s.miss.map(m => m.name.split(' ')[0]).join(', ') : 'Зможуть усі'}</span></div>`).join('');
+    });
+  },
+  task() {
+    $('#t-go').addEventListener('click', () => {
+      const sk = $('#t-skill').value, i = +$('#t-hour').value;
+      const list = members.filter(m => m.skills.includes(sk)).map(m => ({m, st:state(m, i)}));
+      const order = {ok:0, risk:1, down:2, off:3}; list.sort((a, b) => order[a.st.s] - order[b.st.s]);
+      $('#t-res').innerHTML = list.length ? `<p class="muted" style="margin-top:0">${hourName(i)}–${two(hod(i) + 1)}:00 · навичка «${sk}»</p><table class="t"><thead><tr><th>Учасник</th><th>Стан</th><th>Причина</th></tr></thead><tbody>${list.map(x => `<tr><td>${x.m.name}</td><td><span class="tag ${x.st.s}">${stateName(x.st.s)}</span></td><td class="muted">${x.st.s === 'ok' ? '–' : x.st.why}</td></tr>`).join('')}</tbody></table>${list[0].st.s === 'ok' ? `<p>Рекомендую: <b>${list[0].m.name}</b>. Передайте задачу в Jira вручну.</p>` : '<p class="err-text">Немає доступних людей з цією навичкою в цю годину.</p>'}` : '<span class="err-text">У команді немає людей з цією навичкою.</span>';
+    });
+  },
+  report() {
+    $('#r-csv').addEventListener('click', () => {
+      const lines = ['Учасник;Тривоги, год;Відключення, год;Одночасно, год;Разом, год', ...REPORT.map(r => [r.name, f1(r.al), f1(r.out), f1(r.both), f1(r.al + r.out - r.both)].join(';'))];
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], {type:'text/csv'})); a.download = 'zvit_zhovten_2026.csv'; a.click();
+      toast('Звіт збережено у файл zvit_zhovten_2026.csv');
+    });
+  },
+  team() {
+    $('#i-go').addEventListener('click', () => {
+      const e = $('#i-email').value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) { $('#i-email').classList.add('err'); $('#i-err').textContent = 'Введіть правильну адресу пошти.'; return; }
+      if (members.some(m => m.name === e) || invites.some(v => v.email === e && v.status === 'Очікує')) { $('#i-err').textContent = 'Цій людині вже надіслано запрошення.'; return; }
+      invites.unshift({email:e, code:Math.random().toString(36).slice(2, 6).toUpperCase() + '-' + Math.random().toString(36).slice(2, 4).toUpperCase(), until:'23.11.2026', status:'Очікує'});
+      render(); toast(`Запрошення надіслано на ${e}. Посилання дійсне 7 днів.`);
+    });
+    $('#view').querySelectorAll('[data-act="resend"]').forEach(b => b.addEventListener('click', () => { const v = invites[+b.dataset.k]; v.status = 'Очікує'; v.until = '23.11.2026'; render(); toast(`Нове запрошення надіслано на ${v.email}.`); }));
+  },
+  settings() {
+    $('#s-thr').addEventListener('input', e => $('#s-val').textContent = e.target.value);
+    $('#s-save').addEventListener('click', () => { settings.threshold = +$('#s-thr').value; const n = lowRanges().length; toast(`Поріг ${settings.threshold} % збережено. Проміжків нижче порогу: ${n}.`); });
+    $('#view').querySelectorAll('[data-ch]').forEach(c => c.addEventListener('change', () => { settings.channels[c.dataset.ch].on = c.checked; }));
+    $('#view').querySelectorAll('[data-addr]').forEach(c => c.addEventListener('change', () => { settings.channels[c.dataset.addr].addr = c.value; }));
+    $('#view').querySelectorAll('[data-test]').forEach(b => b.addEventListener('click', () => { const k = b.dataset.test, ch = settings.channels[k];
+      toast(ch.on ? `Пробне повідомлення надіслано: ${({slack:'Slack', telegram:'Telegram', email:'пошта'})[k]}, ${ch.addr}.` : 'Канал вимкнено. Увімкніть його, щоб надіслати повідомлення.'); }));
+  },
+  profile() {
+    $('#p-skills').addEventListener('click', e => { if (e.target.classList.contains('chip')) e.target.classList.toggle('on'); });
+    $('#p-save').addEventListener('click', () => {
+      const req = ['#p-comm', '#p-group', '#p-power', '#p-from', '#p-to']; let bad = [];
+      req.forEach(s => { $(s).classList.remove('err'); if ($(s).value === '') bad.push(s); });
+      const from = +$('#p-from').value, to = +$('#p-to').value;
+      if (!bad.length && !(from < to)) bad.push('#p-from', '#p-to');
+      if (bad.length) { bad.forEach(s => $(s).classList.add('err')); $('#p-err').textContent = 'Заповніть усі обов\'язкові поля. Початок роботи має бути раніше за кінець.'; return; }
+      const m = me(); m.comm = $('#p-comm').value; m.group = $('#p-group').value; m.power = $('#p-power').value; m.from = from; m.to = to;
+      m.skills = [...document.querySelectorAll('#p-skills .chip.on')].map(c => c.textContent); m.checked = '16.11.2026'; m.confirmed = true;
+      toast('Профіль збережено. Прогноз перераховано.'); render();
+    });
+  },
+  sources() {
+    $('#view').querySelectorAll('[data-fail]').forEach(c => c.addEventListener('change', () => { sources[c.dataset.fail] = !c.checked; render();
+      if (c.checked) toast(`Сайт ${PROVIDERS[c.dataset.fail]} не відповідає. Адміністратору надіслано повідомлення.`); }));
+    $('#a-go').addEventListener('click', () => {
+      const prov = $('#a-prov').value, group = $('#a-group').value, d = +$('#a-day').value, from = +$('#a-from').value, to = +$('#a-to').value;
+      if (!(from >= 0 && to <= 24 && from < to)) { $('#a-err').textContent = 'Перевірте години: «з» має бути менше за «до».'; return; }
+      outages.push({prov, group, a:d * 24 + from, b:d * 24 + to, type:'off', src:'manual'}); render();
+      toast(`Графік для черги ${group} внесено вручну. Прогноз перераховано.`);
+    });
+  },
+};
+
+document.addEventListener('click', e => {
+  const tb = e.target.closest('[data-tab]'); if (tb) { tab = tb.dataset.tab; render(); return; }
+  if (e.target.dataset.act === 'confirm-group') { const m = me(); m.checked = '16.11.2026'; m.confirmed = true; toast('Дякуємо! Черга підтверджена.'); render(); }
+});
+$('#role').addEventListener('change', e => { role = e.target.value; tab = TABS[role][0][0]; render(); });
+// для демонстрації: ?role=member&tab=profile
+const q = new URLSearchParams(location.search);
+if (q.get('role') && TABS[q.get('role')]) { role = q.get('role'); $('#role').value = role; tab = TABS[role][0][0]; }
+if (q.get('tab') && TABS[role].some(x => x[0] === q.get('tab'))) tab = q.get('tab');
+render();
+</script>
+</body>
+</html>
